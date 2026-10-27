@@ -1,7 +1,10 @@
-﻿using NUnit.Framework;
+﻿using FluentAssertions;
+using FluentAssertions.Equivalency;
+using NUnit.Framework;
 using NUnit.Framework.Legacy;
 
 namespace HomeExercise.Tasks.ObjectComparison;
+
 public class ObjectComparison
 {
     [Test]
@@ -14,16 +17,7 @@ public class ObjectComparison
         var expectedTsar = new Person("Ivan IV The Terrible", 54, 170, 70,
             new Person("Vasili III of Russia", 28, 170, 60, null));
 
-        // Перепишите код на использование Fluent Assertions.
-        ClassicAssert.AreEqual(actualTsar.Name, expectedTsar.Name);
-        ClassicAssert.AreEqual(actualTsar.Age, expectedTsar.Age);
-        ClassicAssert.AreEqual(actualTsar.Height, expectedTsar.Height);
-        ClassicAssert.AreEqual(actualTsar.Weight, expectedTsar.Weight);
-
-        ClassicAssert.AreEqual(expectedTsar.Parent!.Name, actualTsar.Parent!.Name);
-        ClassicAssert.AreEqual(expectedTsar.Parent.Age, actualTsar.Parent.Age);
-        ClassicAssert.AreEqual(expectedTsar.Parent.Height, actualTsar.Parent.Height);
-        ClassicAssert.AreEqual(expectedTsar.Parent.Parent, actualTsar.Parent.Parent);
+        actualTsar.Should().BeEquivalentTo(expectedTsar, config => config.Excluding((IMemberInfo x) => x.Name == "Id"));
     }
 
     [Test]
@@ -35,6 +29,19 @@ public class ObjectComparison
             new Person("Vasili III of Russia", 28, 170, 60, null));
 
         // Какие недостатки у такого подхода? 
+
+
+        // я думаю, что недостатки у этого подхода следующие:
+        // 1) при появлении новых полей придётся дописывать то страшненькое выражение, которое содержится в Return.
+        // Если этого не сделать, то такие новые поля тестом будут проигнорированы
+        // 2) код нечитаем: первое выражение проверяет, указывают ли actual, expected на один и тот же объект,
+        // либо равны ли они null, что может быть не ясно из такой записи, а так же страшное выражение в return довольно объёмное,
+        // громоздкое и, главное, вводящее проверяемые поля вручную.
+        // Я этого избежал, использовав FluentAssertions:
+        // метод расширения обходит графы двух сравниваемых объектов и сравнивает поля и вложенные объекты повершинно,
+        // рядом же прописано, какие поля нужно исключить из сравнения. Добавление нового поля, если его не нужно исключать из сравнения, ведёт к минимуму изменений в коде.
+        // Наконец, ClassicAssert.True() при падении теста напишет Expected True But Was False,
+        // а FluentAssertions напишет, что, где сломалось и по какой причине
         ClassicAssert.True(AreEqual(actualTsar, expectedTsar));
     }
 
